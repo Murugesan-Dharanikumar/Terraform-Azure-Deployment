@@ -1,51 +1,126 @@
-trigger: 
+trigger:
 - main
 
+pool:
+  name: DEVPOOL
+
+variables:
+  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)'
+
 stages:
-- stage: Build
+
+# =========================
+# TERRAFORM BUILD STAGE
+# =========================
+- stage: Terraform_Build
+  displayName: "Terraform Build Stage"
+
   jobs:
-  - job: Build
-    pool:
-      name: 'DEVPOOL'
+  - job: TerraformJob
+    displayName: "Terraform Init Validate Plan"
 
     steps:
+
+    # Checkout Repository
+    - checkout: self
+
+    # Install Terraform
     - task: TerraformInstaller@1
+      displayName: "Install Terraform"
       inputs:
         terraformVersion: 'latest'
+
+    # Terraform Init
     - task: TerraformTaskV4@4
-      displayName: Tf init
+      displayName: "Terraform Init"
       inputs:
         provider: 'azurerm'
         command: 'init'
-        backendAzureRmUseEnvironmentVariablesForAuthentication: false
-        backendAzureRmUseEntraIdForAuthentication: false
+        workingDirectory: '$(terraformWorkingDirectory)'
+
         backendServiceArm: 'Azure subscription 1(092eabe2-f20a-4761-b61d-284ff67f8ef5)'
         backendAzureRmResourceGroupName: 'Demo-CICD-Pipeline'
         backendAzureRmStorageAccountName: 'democicdstorageaccount'
         backendAzureRmContainerName: 'tfstatecicd'
         backendAzureRmKey: 'basic-vm-dev.tfstate'
+
+    # Terraform Validate
     - task: TerraformTaskV4@4
-      displayName: Tf validate
+      displayName: "Terraform Validate"
       inputs:
         provider: 'azurerm'
         command: 'validate'
+        workingDirectory: '$(terraformWorkingDirectory)'
+
+    # Terraform Plan
     - task: TerraformTaskV4@4
-      displayName: Tf plan
+      displayName: "Terraform Plan"
       inputs:
         provider: 'azurerm'
         command: 'plan'
+        workingDirectory: '$(terraformWorkingDirectory)'
         environmentServiceNameAzureRM: 'Azure subscription 1(092eabe2-f20a-4761-b61d-284ff67f8ef5)'
 
+    # Archive Terraform Files
     - task: ArchiveFiles@2
+      displayName: "Archive Terraform Files"
       inputs:
-        rootFolderOrFile: '$(Build.SourcesDirectory)/'
-        includeRootFolder: true
+        rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+        includeRootFolder: false
         archiveType: 'zip'
-        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/terraform-$(Build.BuildId).zip'
         replaceExistingArchive: true
 
+    # Publish Build Artifact
     - task: PublishBuildArtifacts@1
+      displayName: "Publish Artifact"
       inputs:
         PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-        ArtifactName: '$(Build.BuildId)-build'
+        ArtifactName: 'terraform-build-artifact'
         publishLocation: 'Container'
+
+
+# =========================
+# TERRAFORM DEPLOY STAGE
+# =========================
+- stage: Terraform_Deploy
+  displayName: "Terraform Deploy Stage"
+
+  dependsOn: Terraform_Build
+
+  jobs:
+  - job: TerraformApply
+    displayName: "Terraform Apply"
+
+    steps:
+
+    - checkout: self
+
+    # Install Terraform
+    - task: TerraformInstaller@1
+      displayName: "Install Terraform"
+      inputs:
+        terraformVersion: 'latest'
+
+    # Terraform Init
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Init"
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(terraformWorkingDirectory)'
+
+        backendServiceArm: 'Azure subscription 1(092eabe2-f20a-4761-b61d-284ff67f8ef5)'
+        backendAzureRmResourceGroupName: 'Demo-CICD-Pipeline'
+        backendAzureRmStorageAccountName: 'democicdstorageaccount'
+        backendAzureRmContainerName: 'tfstatecicd'
+        backendAzureRmKey: 'basic-vm-dev.tfstate'
+
+    # Terraform Apply
+    - task: TerraformTaskV4@4
+      displayName: "Terraform Apply"
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(terraformWorkingDirectory)'
+        environmentServiceNameAzureRM: 'Azure subscription 1(092eabe2-f20a-4761-b61d-284ff67f8ef5)'
