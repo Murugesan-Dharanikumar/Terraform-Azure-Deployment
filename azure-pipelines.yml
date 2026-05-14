@@ -1,0 +1,51 @@
+trigger: 
+- main
+
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    pool:
+      name: 'DEVPOOL'
+
+    steps:
+    - task: TerraformInstaller@1
+      inputs:
+        terraformVersion: 'latest'
+    - task: TerraformTaskV4@4
+      displayName: Tf init
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendAzureRmUseEnvironmentVariablesForAuthentication: false
+        backendAzureRmUseEntraIdForAuthentication: false
+        backendServiceArm: 'Azure subscription 1(092eabe2-f20a-4761-b61d-284ff67f8ef5)'
+        backendAzureRmResourceGroupName: 'Demo-CICD-Pipeline'
+        backendAzureRmStorageAccountName: 'democicdstorageaccount'
+        backendAzureRmContainerName: 'tfstatecicd'
+        backendAzureRmKey: 'basic-vm-dev.tfstate'
+    - task: TerraformTaskV4@4
+      displayName: Tf validate
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+    - task: TerraformTaskV4@4
+      displayName: Tf plan
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        environmentServiceNameAzureRM: 'Azure subscription 1(092eabe2-f20a-4761-b61d-284ff67f8ef5)'
+
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: '$(Build.SourcesDirectory)/'
+        includeRootFolder: true
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: '$(Build.BuildId)-build'
+        publishLocation: 'Container'
