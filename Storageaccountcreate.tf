@@ -19,11 +19,35 @@ resource "azurerm_resource_group" "example" {
   location = "West Europe"
 }
 
+# Virtual Network
+resource "azurerm_virtual_network" "example" {
+
+  name                = "example-vnet"
+  address_space       = ["10.0.0.0/16"]
+  location            = azurerm_resource_group.example.location
+  resource_group_name = azurerm_resource_group.example.name
+
+  tags = {
+    environment = "staging"
+  }
+}
+
+# Subnet
+resource "azurerm_subnet" "example" {
+
+  name                 = "example-subnet"
+  resource_group_name  = azurerm_resource_group.example.name
+  virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.0.1.0/24"]
+}
+
+# Storage Account
 resource "azurerm_storage_account" "example" {
 
-  name                     = "netappstorage654321"
-  resource_group_name      = azurerm_resource_group.example.name
-  location                 = azurerm_resource_group.example.location # implicit dependency
+  name                = "netappstorage654321"
+  resource_group_name = azurerm_resource_group.example.name
+  location            = azurerm_resource_group.example.location
+
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
