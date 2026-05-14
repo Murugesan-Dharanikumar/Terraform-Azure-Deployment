@@ -5,15 +5,15 @@ terraform {
       version = "~> 3.0"
     }
   }
+
   required_version = ">= 1.6.0"
 }
+
 provider "azurerm" {
-  features {
-
-  }
-
+  features {}
 }
 
+# Resource Group
 resource "azurerm_resource_group" "example" {
   name     = "example-resources"
   location = "West Europe"
@@ -21,7 +21,6 @@ resource "azurerm_resource_group" "example" {
 
 # Virtual Network
 resource "azurerm_virtual_network" "example" {
-
   name                = "example-vnet"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.example.location
@@ -32,17 +31,16 @@ resource "azurerm_virtual_network" "example" {
   }
 }
 
-# Subnet
-resource "azurerm_subnet1" "example" {
-
+# Subnet 1
+resource "azurerm_subnet" "subnet1" {
   name                 = "example-subnet1"
   resource_group_name  = azurerm_resource_group.example.name
   virtual_network_name = azurerm_virtual_network.example.name
   address_prefixes     = ["10.0.1.0/24"]
 }
-# Subnet
-resource "azurerm_subnet2" "example" {
 
+# Subnet 2
+resource "azurerm_subnet" "subnet2" {
   name                 = "example-subnet2"
   resource_group_name  = azurerm_resource_group.example.name
   virtual_network_name = azurerm_virtual_network.example.name
@@ -51,11 +49,9 @@ resource "azurerm_subnet2" "example" {
 
 # Storage Account
 resource "azurerm_storage_account" "example" {
-
-  name                = "netappstorage654321"
-  resource_group_name = azurerm_resource_group.example.name
-  location            = azurerm_resource_group.example.location
-
+  name                     = "netappstorage654321"
+  resource_group_name      = azurerm_resource_group.example.name
+  location                 = azurerm_resource_group.example.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
