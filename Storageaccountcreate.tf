@@ -33,12 +33,20 @@ resource "azurerm_virtual_network" "example" {
 }
 
 # Subnet
-resource "azurerm_subnet" "example" {
+resource "azurerm_subnet1" "example" {
 
-  name                 = "example-subnet"
+  name                 = "example-subnet1"
   resource_group_name  = azurerm_resource_group.example.name
   virtual_network_name = azurerm_virtual_network.example.name
   address_prefixes     = ["10.0.1.0/24"]
+}
+# Subnet
+resource "azurerm_subnet2" "example" {
+
+  name                 = "example-subnet2"
+  resource_group_name  = azurerm_resource_group.example.name
+  virtual_network_name = azurerm_virtual_network.example.name
+  address_prefixes     = ["10.0.2.0/24"]
 }
 
 # Storage Account
